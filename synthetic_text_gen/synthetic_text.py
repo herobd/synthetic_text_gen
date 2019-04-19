@@ -1,4 +1,4 @@
-
+from PIL import ImageFont, ImageDraw, Image
 import cv2
 import numpy as np
 from scipy.ndimage import rotate
@@ -8,7 +8,7 @@ import string
 import random
 import os
 import math
-import grid_distortion
+from . import grid_distortion
 
 #import pyvips
 
