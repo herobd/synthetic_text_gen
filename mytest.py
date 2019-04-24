@@ -5,9 +5,14 @@ st = SyntheticText('../data/fonts/handwritten_fonts','../data/OANC_text',line_pr
 
 fonts = st.getFonts()
 
+st.changeFontProb(5,.1)
+print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
 st.changeFontProb(4,1)
+print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
 st.changeFontProb(3,10)
-st.changeFontProb(2,100)
+print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
+st.changeFontProb(2,-1)
+print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
 for i in range(30):
     image,text,f_index= st.getSample()
 #for font in ['Kids Book/Kids Book Italic.ttf']:

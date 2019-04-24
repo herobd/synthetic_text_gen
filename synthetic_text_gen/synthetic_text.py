@@ -135,8 +135,10 @@ class SyntheticText:
         return self.fonts.copy()
 
     def changeFontProb(self,f_index,amount):
-        self.fontProbs[f_index] += 100*amount/len(self.fonts)
-        self.fontProbs = np.exp(self.fontProbs)/sum(np.exp(self.fontProbs)) #soft max
+        assert(amount>=0)
+        self.fontProbs[f_index] += amount/len(self.fonts)
+        self.fontProbs /= self.fontProbs.sum()
+        #self.fontProbs = np.exp(self.fontProbs)/sum(np.exp(self.fontProbs)) #soft max
 
     def getText(self):
         #l = np.random.randint(1,20)
