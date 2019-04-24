@@ -110,6 +110,7 @@ class SyntheticText:
         self.font_dir = font_dir
         with open(os.path.join(font_dir,'fonts.list')) as f:
             self.fonts = f.read().splitlines()
+        self.fontProbs = np.ones(len(self.fonts))/len(self.fonts) #init at uniform
         self.text_dir = text_dir
         with open(os.path.join(text_dir,'texts.list')) as f:
             self.texts = f.read().splitlines()
@@ -129,6 +130,15 @@ class SyntheticText:
         self.warp_std=warp_std
         self.warp_intr=warp_intr
 
+    
+    def getFonts(self):
+        return self.fonts.copy()
+
+    def changeFontProb(self,f_index,amount):
+        assert(amount>=0)
+        self.fontProbs[f_index] += amount/len(self.fonts)
+        self.fontProbs /= self.fontProbs.sum()
+        #self.fontProbs = np.exp(self.fontProbs)/sum(np.exp(self.fontProbs)) #soft max
 
     def getText(self):
         #l = np.random.randint(1,20)
@@ -143,21 +153,25 @@ class SyntheticText:
         t = text[start:start+l]
         return t
 
-    def getFont(self):
+    def getFont(self,index=None):
         while True:
-            filename = random.choice(self.fonts)
+            if index is None:
+                index = np.random.choice(len(self.fonts),p=self.fontProbs)
+            filename = self.fonts[index] #random.choice(self.fonts)
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
                 break
             except OSError:
                 print('bad font: {}'.format(filename))
-        return font
+                index=None
+        return font, index
 
     def getRenderedText(self,font=None,ink=None):
+        f_index=-1
         for i in range(100):
             random_text = self.getText()
             if font is None:
-                font = self.getFont()
+                font, f_index = self.getFont()
 
             #create big canvas as it's hard to predict how large font will render
             size=(250+190*len(random_text),920)
@@ -183,7 +197,7 @@ class SyntheticText:
 
 
             if (minX<maxX and minY<maxY):
-                return np_image,random_text,minX,maxX,minY,maxY,font,ink
+                return np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink
 
             if i>50:
                 font=None
@@ -193,13 +207,13 @@ class SyntheticText:
 
     def getSample(self):
         while True:
-            np_image,random_text,minX,maxX,minY,maxY,font,ink = self.getRenderedText()
+            np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink = self.getRenderedText()
             if np.random.random()<1.1: #above
                 if  np.random.random()<0.5:
                     fontA=font
                 else:
                     fontA=None
-                np_imageA,random_textA,minXA,maxXA,minYA,maxYA,_,_ = self.getRenderedText(fontA,ink)
+                np_imageA,random_textA,minXA,maxXA,minYA,maxYA,_,_,_ = self.getRenderedText(fontA,ink)
                 gap = np.random.normal(self.neighbor_gap_mean,self.neighbor_gap_var)
                 moveA = int(minY-gap)-maxYA
                 mainY1=max(0,minYA+moveA)
@@ -222,7 +236,7 @@ class SyntheticText:
                     fontA=font
                 else:
                     fontA=None
-                np_imageA,random_textA,minXA,maxXA,minYA,maxYA,_,_ = self.getRenderedText(fontA,ink)
+                np_imageA,random_textA,minXA,maxXA,minYA,maxYA,_,_,_ = self.getRenderedText(fontA,ink)
                 gap = np.random.normal(self.neighbor_gap_mean,self.neighbor_gap_var)
                 moveA = int(maxY+gap)-minYA
                 mainY1=minYA+moveA
@@ -417,4 +431,64 @@ class SyntheticText:
             #    if random.random()>0.5:
             #        pad = 
 
-        return np_image, random_text
+        return np_image, random_text, f_index
+
+    def getFixedSample(self,text,fontfile):
+        #create big canvas as it's hard to predict how large font will render
+        font = self.getFont(fontfile)
+        size=(250+190*len(text),920)
+        image = Image.new(mode='L', size=size)
+
+        draw = ImageDraw.Draw(image)
+        ink=(0.5/2)+0.5
+        draw.text((400, 250), text, font=font,fill=1)
+        np_image = np.array(image)
+
+        horzP = np.max(np_image,axis=0)
+        minX=first_nonzero(horzP,0)
+        maxX=last_nonzero(horzP,0)
+        vertP = np.max(np_image,axis=1)
+        minY=first_nonzero(vertP,0)
+        maxY=last_nonzero(vertP,0)
+
+
+        np_image=np_image*0.8
+        padding=np.array([[5,5],[5,5]])
+        #padding[padding<0]*=0.75
+        #padding = np.round(padding)#.astype(np.uint8)
+
+
+        #crop region
+        #np_image = np.pad(np_image,padding,mode='constant')*0.8
+        minY = max(0,minY-padding[0,0])
+        minX = max(0,minX-padding[1,0])
+        maxY = maxY+1+padding[0,1]
+        maxX = maxX+1+padding[1,1]
+
+        #rot
+
+
+        np_image = np_image[minY:maxY,minX:maxX]
+
+        #noise
+        #specle noise
+        #gaus_n = 0.2+(self.gaus-0.2)*np.random.random()
+        gaus_n=0.001
+        
+        np_image += np.random.normal(0,gaus_n,np_image.shape)
+        #blur
+        blur_s = np.random.normal(self.blur_size,0.2)
+        np_image = gaussian_filter(np_image,blur_s)
+
+        minV = np_image.min()
+        maxV = np_image.max()
+        np_image = (np_image-minV)/(maxV-minV)
+
+        #contrast/brighness
+        #cv_image = (255*np_image).astype(np.uint8)
+        #cv_image = apply_tensmeyer_brightness(cv_image,25)
+        #np_image =cv_image/255.0
+
+
+
+        return np_image
