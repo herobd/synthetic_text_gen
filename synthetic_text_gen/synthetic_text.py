@@ -435,7 +435,7 @@ class SyntheticText:
 
     def getFixedSample(self,text,fontfile):
         #create big canvas as it's hard to predict how large font will render
-        font = self.getFont(fontfile)
+        font,f_index = self.getFont(fontfile)
         size=(250+190*len(text),920)
         image = Image.new(mode='L', size=size)
 

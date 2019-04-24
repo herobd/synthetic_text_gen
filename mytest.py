@@ -11,19 +11,22 @@ st.changeFontProb(4,1)
 print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
 st.changeFontProb(3,10)
 print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
-st.changeFontProb(2,-1)
-print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
-for i in range(30):
-    image,text,f_index= st.getSample()
+#st.changeFontProb(2,-1)
+#print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3],st.fontProbs[4],st.fontProbs[5]))
+#for i in range(30):
+    #image,text,f_index= st.getSample()
 #for font in ['Kids Book/Kids Book Italic.ttf']:
-        
-    #text='test'
-    #image =st.getFixedSample(text,font)
+for f_index in [567,719,602,138]: #range(30):
+    i=f_index    
+    text='best'
+    font = fonts[f_index]
+    print(font)
+    image =st.getFixedSample(text,f_index)
     minV = image.min()
     maxV = image.max()
     print('{} font[{}]:{},  text:{}'.format(i,f_index,fonts[f_index],text))
-    #fn = 'test/{}.png'.format(font[:5])
-    fn = 'test/{}.png'.format(i)
+    fn = 'test/{}.png'.format(font[:5])
+    #fn = 'test/{}.png'.format(i)
     cv2.imwrite(fn,255*image)
 
 #print('top {}, bot {}, left {}, right {}'.format(st.maxOverH0,st.maxOverH,st.maxOverW0,st.maxOverW))
