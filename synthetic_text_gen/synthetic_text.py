@@ -9,6 +9,7 @@ import random
 import os
 import math
 from . import grid_distortion
+import timeit
 
 #import pyvips
 
@@ -106,7 +107,7 @@ def apply_tensmeyer_brightness(img, sigma=20, **kwargs):
 
 class SyntheticText:
 
-    def __init__(self,font_dir,text_dir,text_len=20,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, blur_size=1, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12):
+    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, blur_size=1, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True):
         self.font_dir = font_dir
         with open(os.path.join(font_dir,'fonts.list')) as f:
             self.fonts = f.read().splitlines()
@@ -115,8 +116,10 @@ class SyntheticText:
         with open(os.path.join(text_dir,'texts.list')) as f:
             self.texts = f.read().splitlines()
         self.text_len=text_len
+        self.text_min_len=text_min_len
         self.line_prob = line_prob
         self.pad = pad
+        self.mean_pad = mean_pad
         self.line_thickness = line_thickness
         self.line_var = line_var
         self.rot=rot
@@ -126,6 +129,7 @@ class SyntheticText:
         self.hole_size=hole_size
         self.neighbor_gap_mean=neighbor_gap_mean
         self.neighbor_gap_var=neighbor_gap_var
+        self.linesAboveAndBelow = linesAboveAndBelow
         self.use_warp=use_warp
         self.warp_std=warp_std
         self.warp_intr=warp_intr
@@ -148,7 +152,7 @@ class SyntheticText:
         filename = random.choice(self.texts)
         with open(os.path.join(self.text_dir,filename)) as f:
             text = f.read().replace('\n',' ').replace('  ',' ')
-        l = np.random.randint(1,self.text_len)
+        l = np.random.randint(self.text_min_len,self.text_len)
         start = np.random.randint(0,len(text)-l)
         t = text[start:start+l]
         return t
@@ -162,7 +166,7 @@ class SyntheticText:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
                 break
             except OSError:
-                print('bad font: {}'.format(filename))
+                ##print('bad font: {}'.format(filename))
                 index=None
         return font, index
 
@@ -207,8 +211,11 @@ class SyntheticText:
 
     def getSample(self):
         while True:
+            ticTotal=timeit.default_timer()
+            ##tic=timeit.default_timer()
             np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink = self.getRenderedText()
-            if np.random.random()<1.1: #above
+            ##print('gen initial image: '+str(timeit.default_timer()-tic))
+            if self.linesAboveAndBelow and np.random.random()<1.1: #above
                 if  np.random.random()<0.5:
                     fontA=font
                 else:
@@ -231,7 +238,7 @@ class SyntheticText:
                     AX2 = maxXA-(maxXA+AxOff-mainX2)
                     #print('[{}:{},{}:{}] [{}:{},{}:{}]'.format(mainY1,mainY2+1,mainX1,mainX2+1,AY1,AY2+1,AX1,AX2+1))
                     np_image[mainY1:mainY2+1,mainX1:mainX2+1] = np.maximum(np_image[mainY1:mainY2+1,mainX1:mainX2+1],np_imageA[AY1:AY2+1,AX1:AX2+1])
-            if np.random.random()<1.1: #below
+            if self.linesAboveAndBelow and np.random.random()<1.1: #below
                 if  np.random.random()<0.5:
                     fontA=font
                 else:
@@ -262,12 +269,14 @@ class SyntheticText:
             #np_image = np.ndarray(buffer=base_image.write_to_memory(),
             #        dtype=format_to_dtype[base_image.format],
             #        shape=[base_image.height, base_image.width, base_image.bands])
-
+            ##tic=timeit.default_timer()
 
             np_image=np_image*0.8
-            padding=np.random.normal(0,self.pad,(2,2))
+            padding=np.random.normal(self.mean_pad,self.pad,(2,2))
             padding[padding<0]*=0.75
             padding = np.round(padding)#.astype(np.uint8)
+
+            ##print('padding: '+str(timeit.default_timer()-tic))
 
             #lines
             while np.random.rand() < self.line_prob:
@@ -318,10 +327,18 @@ class SyntheticText:
             #maxY -= removeTop+removeBot
             #minX -= removeLeft
             #maxX -= removeLeft+removeRight
-            degrees=np.random.normal(0,self.rot)
-            degrees = max(-2.5*self.rot,degrees)
-            degrees = min(2.5*self.rot,degrees)
-            np_image = rotate(np_image,degrees,reshape=False)
+            ##tic=timeit.default_timer()
+            if self.rot!=0:
+                degrees=np.random.normal(0,self.rot)
+                degrees = max(-2.5*self.rot,degrees)
+                degrees = min(2.5*self.rot,degrees)
+                np_image = rotate(np_image,degrees,reshape=False)
+            else:
+                degrees=0
+                
+            #M = cv2.getRotationMatrix2D((np_image.shape[1]/2,np_image.shape[0]/2),degrees,1)
+            #np_image = cv2.warpAffine(np_image,M,(np_image.shape[1],np_image.shape[0]))
+            ##print('rotate: '+str(timeit.default_timer()-tic))
 
             
             theta = math.pi*degrees/180
@@ -392,6 +409,7 @@ class SyntheticText:
             #noise
             #specle noise
             #gaus_n = 0.2+(self.gaus-0.2)*np.random.random()
+            ##tic=timeit.default_timer()
             gaus_n = abs(np.random.normal(self.gaus,0.1))
             if gaus_n==0:
                 gaus_n=0.00001
@@ -404,8 +422,10 @@ class SyntheticText:
             minV = np_image.min()
             maxV = np_image.max()
             np_image = (np_image-minV)/(maxV-minV)
+            ##print('noise/blur: '+str(timeit.default_timer()-tic))
 
             #contrast/brighness
+            ##tic=timeit.default_timer()
             cv_image = (255*np_image).astype(np.uint8)
             cv_image = apply_tensmeyer_brightness(cv_image,25)
             #warp aug
@@ -421,6 +441,9 @@ class SyntheticText:
                 std *= intr/12
                 cv_image = grid_distortion.warp_image(cv_image,w_mesh_std=std,h_mesh_std=std,w_mesh_interval=intr,h_mesh_interval=intr)
             np_image =cv_image/255.0
+
+            ##print('aug: '+str(timeit.default_timer()-tic))
+            ##print(' Total: '+str(timeit.default_timer()-ticTotal))
 
             if np_image.shape[0]>0 and np_image.shape[1]>1:
                 break
