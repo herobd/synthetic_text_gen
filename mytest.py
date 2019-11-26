@@ -16,7 +16,7 @@ print('{}, {}, {}, {}, {}'.format(st.fontProbs[1],st.fontProbs[2],st.fontProbs[3
 #for i in range(30):
     #image,text,f_index= st.getSample()
 #for font in ['Kids Book/Kids Book Italic.ttf']:
-for f_index in [567,719,602,138]: #range(30):
+for f_index in [594,784,64]: #range(30):
     i=f_index    
     text='best'
     font = fonts[f_index]
