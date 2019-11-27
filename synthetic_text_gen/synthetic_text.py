@@ -107,7 +107,7 @@ def apply_tensmeyer_brightness(img, sigma=20, **kwargs):
 
 class SyntheticText:
 
-    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, blur_size=1, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True):
+    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, gaus_std=0.1, blur_size=1, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True, useBrightness=True):
         self.font_dir = font_dir
         with open(os.path.join(font_dir,'fonts.list')) as f:
             self.fonts = f.read().splitlines()
@@ -124,6 +124,7 @@ class SyntheticText:
         self.line_var = line_var
         self.rot=rot
         self.gaus=gaus_noise
+        self.gaus_std=gaus_std
         self.blur_size=blur_size
         self.hole_prob=hole_prob
         self.hole_size=hole_size
@@ -133,6 +134,7 @@ class SyntheticText:
         self.use_warp=use_warp
         self.warp_std=warp_std
         self.warp_intr=warp_intr
+        self.useBrightness=useBrightness
 
     
     def getFonts(self):
@@ -410,7 +412,7 @@ class SyntheticText:
             #specle noise
             #gaus_n = 0.2+(self.gaus-0.2)*np.random.random()
             ##tic=timeit.default_timer()
-            gaus_n = abs(np.random.normal(self.gaus,0.1))
+            gaus_n = abs(np.random.normal(self.gaus,self.gaus_std))
             if gaus_n==0:
                 gaus_n=0.00001
             
@@ -427,7 +429,8 @@ class SyntheticText:
             #contrast/brighness
             ##tic=timeit.default_timer()
             cv_image = (255*np_image).astype(np.uint8)
-            cv_image = apply_tensmeyer_brightness(cv_image,25)
+            if self.useBrightness:
+                cv_image = apply_tensmeyer_brightness(cv_image,25)
             #warp aug
             if random.random() < self.use_warp:
                 if type(self.warp_intr) is list:
