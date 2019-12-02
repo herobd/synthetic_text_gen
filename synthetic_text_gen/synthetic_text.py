@@ -107,7 +107,7 @@ def apply_tensmeyer_brightness(img, sigma=20, **kwargs):
 
 class SyntheticText:
 
-    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, gaus_std=0.1, blur_size=1, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True, useBrightness=True):
+    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, gaus_std=0.1, blur_size=1, blur_std=0.2, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True, useBrightness=True):
         self.font_dir = font_dir
         with open(os.path.join(font_dir,'fonts.list')) as f:
             self.fonts = f.read().splitlines()
@@ -126,6 +126,7 @@ class SyntheticText:
         self.gaus=gaus_noise
         self.gaus_std=gaus_std
         self.blur_size=blur_size
+        self.blur_std = blur_std
         self.hole_prob=hole_prob
         self.hole_size=hole_size
         self.neighbor_gap_mean=neighbor_gap_mean
@@ -154,7 +155,10 @@ class SyntheticText:
         filename = random.choice(self.texts)
         with open(os.path.join(self.text_dir,filename)) as f:
             text = f.read().replace('\n',' ').replace('  ',' ')
-        l = np.random.randint(self.text_min_len,self.text_len)
+        if self.text_len>self.text_min_len:
+            l = np.random.randint(self.text_min_len,self.text_len)
+        else:
+            l = self.text_len
         start = np.random.randint(0,len(text)-l)
         t = text[start:start+l]
         return t
@@ -418,7 +422,7 @@ class SyntheticText:
             
             np_image += np.random.normal(0,gaus_n,np_image.shape)
             #blur
-            blur_s = np.random.normal(self.blur_size,0.2)
+            blur_s = np.random.normal(self.blur_size,self.blur_std)
             np_image = gaussian_filter(np_image,blur_s)
 
             minV = np_image.min()
