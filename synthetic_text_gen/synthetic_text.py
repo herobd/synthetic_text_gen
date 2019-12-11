@@ -7,7 +7,7 @@ import skimage
 import string
 import random
 import os
-import math
+import math,re
 from . import grid_distortion
 import timeit
 
@@ -154,7 +154,8 @@ class SyntheticText:
         #    s += random.choice(string.ascii_letters)
         filename = random.choice(self.texts)
         with open(os.path.join(self.text_dir,filename)) as f:
-            text = f.read().replace('\n',' ').replace('  ',' ')
+            text = f.read()#.replace('\n',' ').replace('  ',' ')
+            text=re.sub('\s+',' ',text)
         if self.text_len>self.text_min_len:
             l = np.random.randint(self.text_min_len,self.text_len)
         else:
