@@ -155,11 +155,21 @@ class SyntheticText:
         filename = random.choice(self.texts)
         with open(os.path.join(self.text_dir,filename)) as f:
             text = f.read()#.replace('\n',' ').replace('  ',' ')
-            text=re.sub('\s+',' ',text)
+            #dddd=len(text)
+            #tic=timeit.default_timer()
+            #text=re.sub('\s+',' ',text)
+            #print('before:{}, after:{}, time:{}'.format(dddd,len(text),timeit.default_timer()-tic))
+
         if self.text_len>self.text_min_len:
             l = np.random.randint(self.text_min_len,self.text_len)
         else:
             l = self.text_len
+
+        buffer_len = 11*l
+        startBuffer = np.random.randint(0,len(text)-buffer_len)
+        text = text[startBuffer:startBuffer+buffer_len]
+        text=re.sub('\s+',' ',text)
+
         start = np.random.randint(0,len(text)-l)
         t = text[start:start+l]
         return t
