@@ -170,7 +170,10 @@ class SyntheticText:
         text = text[startBuffer:startBuffer+buffer_len]
         text=re.sub('\s+',' ',text)
 
-        start = np.random.randint(0,len(text)-l)
+        if len(text)-l > 1:
+            start = np.random.randint(0,len(text)-l)
+        else:
+            start = 0
         t = text[start:start+l]
         return t
 
