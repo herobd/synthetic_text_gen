@@ -6,8 +6,8 @@ from scipy.ndimage.filters import gaussian_filter
 import skimage
 import string
 import random
-import os
-import math,re
+import os,sys
+import math,re,csv
 from . import grid_distortion
 import timeit
 
@@ -107,14 +107,21 @@ def apply_tensmeyer_brightness(img, sigma=20, **kwargs):
 
 class SyntheticText:
 
-    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, gaus_std=0.1, blur_size=1, blur_std=0.2, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True, useBrightness=True):
+    def __init__(self,font_dir,text_dir,text_len=20,text_min_len=1,mean_pad=0,pad=20,line_prob=0.1,line_thickness=3,line_var=20,rot=10, gaus_noise=0.1, gaus_std=0.1, blur_size=1, blur_std=0.2, hole_prob=0.2,hole_size=100,neighbor_gap_mean=20,neighbor_gap_var=7,use_warp=0.5,warp_std=1.5, warp_intr=12, linesAboveAndBelow=True, useBrightness=True, clean=False):
         self.font_dir = font_dir
-        with open(os.path.join(font_dir,'fonts.list')) as f:
-            self.fonts = f.read().splitlines()
+        if clean:
+            with open(os.path.join(font_dir,'clean_fonts.csv')) as f:
+                reader = csv.reader(f, delimiter=',', quotechar='"')
+                self.fonts = [row for row in reader]
+            self.fonts=self.fonts[1:] #discard header row
+        else:
+            with open(os.path.join(font_dir,'fonts.list')) as f:
+                self.fonts = f.read().splitlines()
         self.fontProbs = np.ones(len(self.fonts))/len(self.fonts) #init at uniform
         self.text_dir = text_dir
-        with open(os.path.join(text_dir,'texts.list')) as f:
-            self.texts = f.read().splitlines()
+        if text_dir is not None:
+            with open(os.path.join(text_dir,'texts.list')) as f:
+                self.texts = f.read().splitlines()
         self.text_len=text_len
         self.text_min_len=text_min_len
         self.line_prob = line_prob
@@ -177,28 +184,36 @@ class SyntheticText:
         t = text[start:start+l]
         return t
 
-    def getFont(self,index=None):
+    def getFont(self,text,index=None):
         while True:
             if index is None:
                 index = np.random.choice(len(self.fonts),p=self.fontProbs)
             filename = self.fonts[index] #random.choice(self.fonts)
+            if type(filename) is not str:
+                filename, hasLower, hasNums = filename
+                if hasLower=='False':
+                    text=text.upper()
+                if hasNums=='False':
+                    text=re.sub('\d','',text)
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
                 break
             except OSError:
                 ##print('bad font: {}'.format(filename))
                 index=None
-        return font, index
+        return font, index, text
 
     def getRenderedText(self,font=None,ink=None):
         f_index=-1
         for i in range(100):
             random_text = self.getText()
             if font is None:
-                font, f_index = self.getFont()
+                font, f_index, new_text = self.getFont(random_text)
+            else:
+                new_text = random_text
 
             #create big canvas as it's hard to predict how large font will render
-            size=(250+190*len(random_text),920)
+            size=(250+190*len(new_text),920)
             image = Image.new(mode='L', size=size)
 
             draw = ImageDraw.Draw(image)
@@ -207,6 +222,7 @@ class SyntheticText:
             try:
                 draw.text((400, 250), random_text, font=font,fill=1)
             except OSError:
+                print('failed, {}, {}'.format(f_index,random_text))
                 font=None
                 ink=None
                 continue
@@ -221,7 +237,9 @@ class SyntheticText:
 
 
             if (minX<maxX and minY<maxY):
-                return np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink
+                print('original {}'.format(np_image.shape))
+                return np_image,new_text,minX,maxX,minY,maxY,font, f_index,ink
+            print('blank, {}, {}'.format(f_index,random_text))
 
             if i>50:
                 font=None
@@ -282,6 +300,8 @@ class SyntheticText:
                     #print('[{}:{},{}:{}] [{}:{},{}:{}]'.format(mainY1,mainY2+1,mainX1,mainX2+1,AY1,AY2+1,AX1,AX2+1))
                     np_image[mainY1:mainY2+1,mainX1:mainX2+1] = np.maximum(np_image[mainY1:mainY2+1,mainX1:mainX2+1],np_imageA[AY1:AY2+1,AX1:AX2+1])
 
+            print('cropped {}'.format(np_image.shape))
+
 
             #base_image = pyvips.Image.text(random_text, dpi=300, font=random_font)
             #org_h = base_image.height
@@ -333,6 +353,7 @@ class SyntheticText:
             minX = max(0,minX-padding[1,0])
             maxY = maxY+1+padding[0,1]
             maxX = maxX+1+padding[1,1]
+            print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
 
             #rot
             #xc=(maxX+minX)//2
@@ -348,17 +369,36 @@ class SyntheticText:
             #minX -= removeLeft
             #maxX -= removeLeft+removeRight
             ##tic=timeit.default_timer()
+
+            #crop down enough to center image
+            xc_mm = (maxX+minX)/2
+            yc_mm = (maxY+minY)/2
+            half_width = int(round(min(xc_mm,np_image.shape[1]-xc_mm)))
+            half_height = int(round(min(yc_mm,np_image.shape[0]-yc_mm)))
+            xc_mm = int(round(xc_mm))
+            yc_mm = int(round(yc_mm))
+            np_image = np_image[yc_mm-half_height:yc_mm+half_height, xc_mm-half_width:xc_mm+half_width]
+            minX-=xc_mm-half_width
+            maxX-=xc_mm-half_width
+            minY-=yc_mm-half_height
+            maxY-=yc_mm-half_height
+            print('center image {}'.format(np_image.shape))
+            print('center minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
+
+            #perform rotation
             if self.rot!=0:
                 degrees=np.random.normal(0,self.rot)
                 degrees = max(-2.5*self.rot,degrees)
                 degrees = min(2.5*self.rot,degrees)
                 np_image = rotate(np_image,degrees,reshape=False)
+                print('rotate : {}'.format(degrees))
             else:
                 degrees=0
                 
             #M = cv2.getRotationMatrix2D((np_image.shape[1]/2,np_image.shape[0]/2),degrees,1)
             #np_image = cv2.warpAffine(np_image,M,(np_image.shape[1],np_image.shape[0]))
             ##print('rotate: '+str(timeit.default_timer()-tic))
+
 
             
             theta = math.pi*degrees/180
@@ -385,6 +425,9 @@ class SyntheticText:
             maxY = int(round(min(max(tlY,trY,blY,brY),np_image.shape[0])))
             minX = int(round(max(min(tlX,trX,blX,brX),0)))
             maxX = int(round(min(max(tlX,trX,blX,brX),np_image.shape[1])))
+            if maxY<0:
+                import pdb;pdb.set_trace()
+            print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
             
 
             #yy,xx,val = weighted_line(minY,minX,minY,maxX,20,0,np_image.shape[0],0,np_image.shape[1])
@@ -407,6 +450,7 @@ class SyntheticText:
 
 
             np_image = np_image[minY:maxY,minX:maxX]
+            print('2nd crop {}'.format(np_image.shape))
 
             if np_image.shape[1]==0 or np_image.shape[0]==0:
                 continue
@@ -479,7 +523,7 @@ class SyntheticText:
 
     def getFixedSample(self,text,fontfile):
         #create big canvas as it's hard to predict how large font will render
-        font,f_index = self.getFont(fontfile)
+        font,f_index,text = self.getFont(text,fontfile)
         size=(250+190*len(text),920)
         image = Image.new(mode='L', size=size)
 
@@ -536,3 +580,45 @@ class SyntheticText:
 
 
         return np_image
+
+    def renderPlain(self,text,font):
+        size=(250+190*len(text),920)
+        image = Image.new(mode='L', size=size)
+        draw = ImageDraw.Draw(image)
+        draw.text((400, 250), text, font=font,fill=1)
+        np_image = np.array(image)
+        return np_image
+    def analyzeFont(self,font):
+        image_A=self.renderPlain('A',font)
+        image_B=self.renderPlain('B',font)
+        hasChars = np.absolute(image_A-image_B).sum()>10
+        image_1=self.renderPlain('1',font)
+        image_2=self.renderPlain('2',font)
+        hasNums = np.absolute(image_1-image_2).sum()>10
+        image_a=self.renderPlain('a',font)
+        hasLower = np.absolute(image_A-image_a).sum()>10
+
+        return hasChars, hasLower, hasNums
+    
+    def cleanFonts(self,outfile):
+        newFonts=[]
+        for i,filename in enumerate(self.fonts):
+            try:
+                font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
+                hasChars, hasLower, hasNums = self.analyzeFont(font)
+            except OSError:
+                hasChars, hasLower, hasNums = (False, False, False)
+
+            if hasChars:
+                newFonts.append([filename,hasLower,hasNums])
+        with open(outfile,'w') as f:
+            csvwriter = csv.writer(f, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csvwriter.writerow(['path','hasLower','hasNums'])
+            for l in newFonts:
+                csvwriter.writerow(l)
+
+if __name__ == "__main__":
+    font_dir = sys.argv[1]
+    st = SyntheticText(font_dir,None)
+    st.cleanFonts(os.path.join(font_dir,'clean_fonts.csv'))
+    print('created clean fonts file')
