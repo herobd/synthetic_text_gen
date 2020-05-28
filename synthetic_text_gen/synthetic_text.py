@@ -391,7 +391,7 @@ class SyntheticText:
                 degrees = max(-2.5*self.rot,degrees)
                 degrees = min(2.5*self.rot,degrees)
                 np_image = rotate(np_image,degrees,reshape=False)
-                Aprint('rotate : {}'.format(degrees))
+                #print('rotate : {}'.format(degrees))
             else:
                 degrees=0
                 
