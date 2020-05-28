@@ -222,7 +222,7 @@ class SyntheticText:
             try:
                 draw.text((400, 250), random_text, font=font,fill=1)
             except OSError:
-                print('failed, {}, {}'.format(f_index,random_text))
+                #print('failed, {}, {}'.format(f_index,random_text))
                 font=None
                 ink=None
                 continue
@@ -237,9 +237,9 @@ class SyntheticText:
 
 
             if (minX<maxX and minY<maxY):
-                print('original {}'.format(np_image.shape))
+                #print('original {}'.format(np_image.shape))
                 return np_image,new_text,minX,maxX,minY,maxY,font, f_index,ink
-            print('blank, {}, {}'.format(f_index,random_text))
+            #print('blank, {}, {}'.format(f_index,random_text))
 
             if i>50:
                 font=None
@@ -300,7 +300,7 @@ class SyntheticText:
                     #print('[{}:{},{}:{}] [{}:{},{}:{}]'.format(mainY1,mainY2+1,mainX1,mainX2+1,AY1,AY2+1,AX1,AX2+1))
                     np_image[mainY1:mainY2+1,mainX1:mainX2+1] = np.maximum(np_image[mainY1:mainY2+1,mainX1:mainX2+1],np_imageA[AY1:AY2+1,AX1:AX2+1])
 
-            print('cropped {}'.format(np_image.shape))
+            #print('cropped {}'.format(np_image.shape))
 
 
             #base_image = pyvips.Image.text(random_text, dpi=300, font=random_font)
@@ -353,7 +353,7 @@ class SyntheticText:
             minX = max(0,minX-padding[1,0])
             maxY = maxY+1+padding[0,1]
             maxX = maxX+1+padding[1,1]
-            print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
+            #print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
 
             #rot
             #xc=(maxX+minX)//2
@@ -382,8 +382,8 @@ class SyntheticText:
             maxX-=xc_mm-half_width
             minY-=yc_mm-half_height
             maxY-=yc_mm-half_height
-            print('center image {}'.format(np_image.shape))
-            print('center minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
+            #print('center image {}'.format(np_image.shape))
+            #print('center minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
 
             #perform rotation
             if self.rot!=0:
@@ -391,7 +391,7 @@ class SyntheticText:
                 degrees = max(-2.5*self.rot,degrees)
                 degrees = min(2.5*self.rot,degrees)
                 np_image = rotate(np_image,degrees,reshape=False)
-                print('rotate : {}'.format(degrees))
+                Aprint('rotate : {}'.format(degrees))
             else:
                 degrees=0
                 
@@ -427,7 +427,7 @@ class SyntheticText:
             maxX = int(round(min(max(tlX,trX,blX,brX),np_image.shape[1])))
             if maxY<0:
                 import pdb;pdb.set_trace()
-            print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
+            #print('minX:{}, minY:{}, maxX:{}, maxY:{}'.format(minX,minY,maxX,maxY))
             
 
             #yy,xx,val = weighted_line(minY,minX,minY,maxX,20,0,np_image.shape[0],0,np_image.shape[1])
@@ -450,7 +450,7 @@ class SyntheticText:
 
 
             np_image = np_image[minY:maxY,minX:maxX]
-            print('2nd crop {}'.format(np_image.shape))
+            #print('2nd crop {}'.format(np_image.shape))
 
             if np_image.shape[1]==0 or np_image.shape[0]==0:
                 continue
