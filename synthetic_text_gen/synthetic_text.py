@@ -1,5 +1,5 @@
 from PIL import ImageFont, ImageDraw, Image
-import cv2
+from . import img_f as cv2
 import numpy as np
 from scipy.ndimage import rotate
 from scipy.ndimage.filters import gaussian_filter
@@ -76,15 +76,19 @@ def rot_point(x,y,xc,yc,theta):
     return x_n+xc,y_n+yc
 
 def tensmeyer_brightness(img, foreground=0, background=0):
-    if len(img.shape)>2 and img.shape[2]==3:
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    if img.shape[2]==3:
+        gray = cv2.rgb2gray(img)
     else:
-        gray = img
-    ret,th = cv2.threshold(gray ,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        gray = img[:,:,0]
+    try:
+        ret,th = cv2.otsuThreshold(gray)
+    except ValueError:
+        th=img/2
 
-    th = (th.astype(np.float32) / 255)
-    if len(img.shape)>2:
-        th = th[...,None]
+
+    th = (th.astype(np.float32) / 255)[...,None]
+    if len(img.shape)==2:
+        img = img[...,None]
 
     img = img.astype(np.float32)
     img = img + (1.0 - th) * foreground
