@@ -76,10 +76,11 @@ def rot_point(x,y,xc,yc,theta):
     return x_n+xc,y_n+yc
 
 def tensmeyer_brightness(img, foreground=0, background=0):
-    if len(img.shape)==3 and img.shape[2]==3:
-        gray = cv2.rgb2gray(img)
-    elif len(img.shape)==3:
-        gray = img[:,:,0]
+    if len(img.shape)==3:
+        if img.shape[2]==3:
+            gray = cv2.rgb2gray(img)
+        else:
+            gray = img[:,:,0]
     else:
         gray = img
     try:
