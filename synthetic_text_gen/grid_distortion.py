@@ -4,8 +4,8 @@ from scipy.interpolate import griddata
 import sys
 
 INTERPOLATION = {
-    "linear": cv2.INTER_LINEAR,
-    "cubic": cv2.INTER_CUBIC
+    "linear": 1,
+    "cubic": 2
 }
 
 def warp_image(img, random_state=None, **kwargs):
