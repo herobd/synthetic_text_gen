@@ -165,7 +165,7 @@ class SyntheticText:
         else:
             l = self.text_len
 
-        buffer_len = 11*l
+        buffer_len = min(11*l,len(text)-1)
         startBuffer = np.random.randint(0,len(text)-buffer_len)
         text = text[startBuffer:startBuffer+buffer_len]
         text=re.sub('\s+',' ',text)
