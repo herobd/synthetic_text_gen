@@ -1,14 +1,16 @@
-import cv2
+import utils.img_f as cv2
 import numpy as np
 from scipy.interpolate import griddata
 import sys
 
 INTERPOLATION = {
-    "linear": cv2.INTER_LINEAR,
-    "cubic": cv2.INTER_CUBIC
+    "linear": 1,
+    "cubic": 2
 }
 
 def warp_image(img, random_state=None, **kwargs):
+    if img.shape[0]<=5 or img.shape[1]<=5:
+        return img
     if random_state is None:
         random_state = np.random.RandomState()
 
@@ -58,10 +60,15 @@ def warp_image(img, random_state=None, **kwargs):
     grid_z = griddata(destination, source, (grid_x, grid_y), method=interpolation_method).astype(np.float32)
     map_x = grid_z[:,:,1]
     map_y = grid_z[:,:,0]
-    borderV = img.mean(axis=(0,1))
-    if len(borderV.shape)>0:
-        borderV = tuple(borderV.tolist())
-    warped = cv2.remap(img, map_x, map_y, INTERPOLATION[interpolation_method], borderValue=borderV)
+    meanV = img.mean()
+    if len(img.shape)==3 and img.shape[2]==1:
+        removed_dim=True
+        img = img[:,:,0]
+    else:
+        removed_dim=False
+    warped = cv2.remap(img, map_x, map_y, INTERPOLATION[interpolation_method], borderValue=(meanV,meanV,meanV))
+    if removed_dim:
+        warped = warped[:,:,None]
 
     return warped
 
