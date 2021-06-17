@@ -175,8 +175,8 @@ class SyntheticText:
             #print('before:{}, after:{}, time:{}'.format(dddd,len(text),timeit.default_timer()-tic))
         
         if num_chars is not None:
-            l = p.random.randint((max(1,num_chars-2),num_chars+2)
-        if self.text_len>self.text_min_len:
+            l = np.random.randint(max(1,num_chars-2),num_chars+2)
+        elif self.text_len>self.text_min_len:
             l = np.random.randint(self.text_min_len,self.text_len)
         else:
             l = self.text_len
