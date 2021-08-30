@@ -40,6 +40,9 @@ class SyntheticWord:
             filename, hasLower, hasNums = self.fonts[index]
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
+
+                minY,maxY = self.getRenderedText(font,'Tlygj|')
+                font = (font,minY,maxY)
                 break
             except OSError:
                 pass
@@ -53,12 +56,20 @@ class SyntheticWord:
                 if hasNums:
                     try:
                         fontNums = ImageFont.truetype(os.path.join(self.font_dir,filenameNums), 100) 
+                        minY,maxY = self.getRenderedText(font,'Tlygj|1')
+                        font = (font,minY,maxY)
                         break
                     except OSError:
                         pass
         return (font,filename,fontNums,filenameNums)
 
     def getRenderedText(self,font,text,ink=0.99):
+        if type(font) is tuple:
+            font,minY,maxY = font
+        else:
+            minY=None
+            maxY=None
+
         for retry in range(7):
 
             #create big canvas as it's hard to predict how large font will render
@@ -76,9 +87,13 @@ class SyntheticWord:
             horzP = np.max(np_image,axis=0)
             minX=first_nonzero(horzP,0)
             maxX=last_nonzero(horzP,0)
-            vertP = np.max(np_image,axis=1)
-            minY=first_nonzero(vertP,0)
-            maxY=last_nonzero(vertP,0)
+            if minY is None:
+                vertP = np.max(np_image,axis=1)
+                minY=first_nonzero(vertP,0)
+                maxY=last_nonzero(vertP,0)
+                return minY,maxY
+
+            #print('minY: {}'.format(minY))
 
 
             if (minX<maxX and minY<maxY):
@@ -96,10 +111,11 @@ if __name__ == "__main__":
     text = sys.argv[2]
     sw = SyntheticWord(font_dir)
     font,name,fontN,nameN = sw.getFont()
-    if re.match('\d',text):
-        im = sw.getRenderedText(fontN,text)
-    else:
-        im = sw.getRenderedText(font,text)
+    for text in [text,text+'y',text+'t']:
+        if re.match('\d',text):
+            im = sw.getRenderedText(fontN,text)
+        else:
+            im = sw.getRenderedText(font,text)
 
-    cv2.imshow('x',im)
-    cv2.show()
+        cv2.imshow('x',im)
+        cv2.show()
