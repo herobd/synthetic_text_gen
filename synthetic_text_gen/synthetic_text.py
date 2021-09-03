@@ -161,7 +161,7 @@ class SyntheticText:
         self.fontProbs /= self.fontProbs.sum()
         #self.fontProbs = np.exp(self.fontProbs)/sum(np.exp(self.fontProbs)) #soft max
 
-    def getText(self):
+    def getText(self,num_chars=None):
         #l = np.random.randint(1,20)
         #s = ''
         #for i in range(l):
@@ -173,8 +173,10 @@ class SyntheticText:
             #tic=timeit.default_timer()
             #text=re.sub('\s+',' ',text)
             #print('before:{}, after:{}, time:{}'.format(dddd,len(text),timeit.default_timer()-tic))
-
-        if self.text_len>self.text_min_len:
+        
+        if num_chars is not None:
+            l = np.random.randint(max(1,num_chars-2),num_chars+2)
+        elif self.text_len>self.text_min_len:
             l = np.random.randint(self.text_min_len,self.text_len)
         else:
             l = self.text_len
@@ -210,10 +212,10 @@ class SyntheticText:
                 index=None
         return font, index, text
 
-    def getRenderedText(self,font=None,ink=None):
+    def getRenderedText(self,font=None,ink=None,num_chars=None):
         f_index=-1
         for i in range(100):
-            random_text = self.getText()
+            random_text = self.getText(num_chars)
             if font is None:
                 font, f_index, new_text = self.getFont(random_text)
             else:
@@ -254,11 +256,11 @@ class SyntheticText:
         return np.zeros((20,20))
         
 
-    def getSample(self):
+    def getSample(self,num_chars=None):
         while True:
             ticTotal=timeit.default_timer()
             ##tic=timeit.default_timer()
-            np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink = self.getRenderedText()
+            np_image,random_text,minX,maxX,minY,maxY,font, f_index,ink = self.getRenderedText(num_chars=num_chars)
             ##print('gen initial image: '+str(timeit.default_timer()-tic))
             if self.linesAboveAndBelow and np.random.random()<1.1: #above
                 if  np.random.random()<0.5:
