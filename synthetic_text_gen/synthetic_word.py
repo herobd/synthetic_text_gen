@@ -101,7 +101,7 @@ class SyntheticWord:
                 #return np_image,new_text,minX,maxX,minY,maxY,font, f_index,ink
                 return np_image[minY:maxY+1,minX:maxX+1]
             else:
-                print('uhoh, blank image, what do I do?')
+                #print('uhoh, blank image, what do I do?')
                 return None
         return None
 
