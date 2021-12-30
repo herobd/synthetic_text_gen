@@ -22,10 +22,14 @@ def last_nonzero(arr, axis, invalid_val=-1):
 
 class SyntheticWord:
 
-    def __init__(self,font_dir,clean=True):
+    def __init__(self,font_dir,clean=True,clear=False):
         self.font_dir = font_dir
-        if clean:
-            with open(os.path.join(font_dir,'clean_fonts.csv')) as f:
+        if clean or clear:
+            if clear:
+                csv_file = 'clear_fonts.csv'
+            else:
+                csv_file = 'clean_fonts.csv'
+            with open(os.path.join(font_dir,csv_file)) as f:
                 reader = csv.reader(f, delimiter=',', quotechar='"')
                 self.fonts = [row for row in reader]
             self.fonts=self.fonts[1:] #discard header row
@@ -33,6 +37,28 @@ class SyntheticWord:
             with open(os.path.join(font_dir,'fonts.list')) as f:
                 self.fonts = f.read().splitlines()
 
+    def getTestFontImages(self,start):
+        ret=[]
+        texts = ['abcdefg','hijklmn','opqrst','uvwxyz','12345','67890','ABCDEFG','HIJKLMN','OPQRST','UVWXYZ']
+        these_fonts = self.fonts[start:start+1000]
+        for index, (filename,hasLower,hasNums) in enumerate(these_fonts):
+            if hasNums and hasLower:
+                print('rendering {}/{}'.format(index+start,len(these_fonts)+start),end='\r')
+                font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
+                minY,maxY = self.getRenderedText(font,'Tlygj|') 
+                font = (font,minY,maxY)
+                bad=False
+                images=[]
+                for s in texts:
+                    image = self.getRenderedText(font,s)
+                    if image is None:
+                        bad=True
+                        break
+                    images.append((s,image))
+                if bad:
+                    continue
+                ret.append((index+start,filename,images))
+        return ret
 
     def getFont(self):
         while True:
@@ -73,7 +99,7 @@ class SyntheticWord:
         for retry in range(7):
 
             #create big canvas as it's hard to predict how large font will render
-            size=(250+190*len(text)+200*retry,920+200*retry)
+            size=(250+190*max(2,len(text))+200*retry,920+200*retry)
             image = Image.new(mode='L', size=size)
 
             draw = ImageDraw.Draw(image)
