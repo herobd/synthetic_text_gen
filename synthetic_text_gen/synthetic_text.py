@@ -1,5 +1,7 @@
 from PIL import ImageFont, ImageDraw, Image
+from . import grid_distortion
 from . import img_f as cv2
+#import img_f as cv2
 import numpy as np
 from scipy.ndimage import rotate
 from scipy.ndimage.filters import gaussian_filter
@@ -8,7 +10,6 @@ import string
 import random
 import os,sys
 import math,re,csv
-from . import grid_distortion
 import timeit
 
 #import pyvips
@@ -599,13 +600,20 @@ class SyntheticText:
         return np_image
     def analyzeFont(self,font):
         image_A=self.renderPlain('A',font)
-        image_B=self.renderPlain('B',font)
-        hasChars = np.absolute(image_A-image_B).sum()>10
+        image_B=self.renderPlain('Y',font)
+        image_C=self.renderPlain('L',font)
+        image_a=self.renderPlain('a',font)
+        image_b=self.renderPlain('y',font)
+        image_c=self.renderPlain('l',font)
+        hasChars = np.absolute(image_A-image_B).sum()>10 and np.absolute(image_a-image_c).sum()>10 and np.absolute(image_C-image_B).sum()>10
         image_1=self.renderPlain('1',font)
         image_2=self.renderPlain('2',font)
-        hasNums = np.absolute(image_1-image_2).sum()>10
-        image_a=self.renderPlain('a',font)
-        hasLower = np.absolute(image_A-image_a).sum()>10
+        image_5=self.renderPlain('5',font)
+        image_6=self.renderPlain('6',font)
+        image_39=self.renderPlain('39',font)
+        image_47=self.renderPlain('47',font)
+        hasNums = np.absolute(image_1-image_2).sum()>10 and np.absolute(image_1-image_6).sum()>10 and np.absolute(image_47-image_39).sum()>10 and np.absolute(image_5-image_6).sum()>10 and np.absolute(image_5-image_2).sum()>10
+        hasLower = np.absolute(image_A-image_a).sum()>10 and np.absolute(image_B-image_b).sum()>10 and np.absolute(image_C-image_c).sum()>10 and np.absolute(image_c-image_a).sum()>10
 
         return hasChars, hasLower, hasNums
     
@@ -620,6 +628,7 @@ class SyntheticText:
 
             if hasChars:
                 newFonts.append([filename,hasLower,hasNums])
+            print('{}/{}'.format(i,len(self.fonts)),end='\r')
         with open(outfile,'w') as f:
             csvwriter = csv.writer(f, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
             csvwriter.writerow(['path','hasLower','hasNums'])
@@ -629,5 +638,5 @@ class SyntheticText:
 if __name__ == "__main__":
     font_dir = sys.argv[1]
     st = SyntheticText(font_dir,None)
-    st.cleanFonts(os.path.join(font_dir,'clean_fonts.csv'))
-    print('created clean fonts file')
+    st.cleanFonts(os.path.join(font_dir,'new_clean_fonts.csv'))
+    print('created clean fonts file: new_clean_fonts.csv')

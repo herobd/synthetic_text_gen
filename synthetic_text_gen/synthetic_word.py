@@ -22,32 +22,64 @@ def last_nonzero(arr, axis, invalid_val=-1):
 
 class SyntheticWord:
 
-    def __init__(self,font_dir,clean=True):
+    def __init__(self,font_dir,clean=True,clear=False):
         self.font_dir = font_dir
-        if clean:
-            with open(os.path.join(font_dir,'clean_fonts.csv')) as f:
+        if clean or clear:
+            if clear:
+                csv_file = 'clear_fonts.csv'
+            else:
+                csv_file = 'clean_fonts.csv'
+            with open(os.path.join(font_dir,csv_file)) as f:
                 reader = csv.reader(f, delimiter=',', quotechar='"')
-                self.fonts = [row for row in reader]
+                self.fonts = [(path,case!='False',num!='False') for path,case,num in reader]
             self.fonts=self.fonts[1:] #discard header row
+
         else:
             with open(os.path.join(font_dir,'fonts.list')) as f:
                 self.fonts = f.read().splitlines()
 
+    def getTestFontImages(self,start):
+        ret=[]
+        texts = ['abcdefg','hijklmn','opqrst','uvwxyz','12345','67890','ABCDEFG','HIJKLMN','OPQRST','UVWXYZ']
+        these_fonts = self.fonts[start:start+1000]
+        for index, (filename,hasLower,hasNums) in enumerate(these_fonts):
+            if hasNums and hasLower:
+                print('rendering {}/{}'.format(index+start,len(these_fonts)+start),end='\r')
+                font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
+                minY,maxY = self.getRenderedText(font,'Tlygj|') 
+                font = (font,minY,maxY)
+                bad=False
+                images=[]
+                for s in texts:
+                    image = self.getRenderedText(font,s)
+                    if image is None:
+                        bad=True
+                        break
+                    images.append((s,image))
+                if bad:
+                    continue
+                ret.append((index+start,filename,images))
+        return ret
 
-    def getFont(self):
+    def getFont(self,target=None):
         while True:
-            index = np.random.choice(len(self.fonts))
-            filename, hasLower, hasNums = self.fonts[index]
+            if target is None:
+                index = np.random.choice(len(self.fonts))
+                filename, hasLower, hasNums = self.fonts[index]
+            else:
+                for filename,hasLower,hasNums in self.fonts:
+                    if filename==target:
+                        break
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
 
                 minY,maxY = self.getRenderedText(font,'Tlygj|')
-                font = (font,minY,maxY)
+                fontR = (font,minY,maxY,hasLower)
                 break
             except OSError:
                 pass
         if hasNums:
-            fontNums = font
+            fontNumsR = fontR
             filenameNums = filename
         else:
             while True:
@@ -56,24 +88,28 @@ class SyntheticWord:
                 if hasNums:
                     try:
                         fontNums = ImageFont.truetype(os.path.join(self.font_dir,filenameNums), 100) 
-                        minY,maxY = self.getRenderedText(font,'Tlygj|1')
-                        font = (font,minY,maxY)
+                        minY,maxY = self.getRenderedText(fontNums,'Tlygj|1')
+                        fontNumsR = (fontNums,minY,maxY,hasLower)
                         break
                     except OSError:
                         pass
-        return (font,filename,fontNums,filenameNums)
+        return (fontR,filename,fontNumsR,filenameNums)
 
-    def getRenderedText(self,font,text,ink=0.99):
-        if type(font) is tuple:
-            font,minY,maxY = font
+    def getRenderedText(self,fontP,text,ink=0.99):
+        if isinstance(fontP, tuple):
+            font,minY,maxY,hasLower = fontP
+            if not hasLower:
+                text=text.upper()
         else:
+            font = fontP
             minY=None
             maxY=None
+
 
         for retry in range(7):
 
             #create big canvas as it's hard to predict how large font will render
-            size=(250+190*len(text)+200*retry,920+200*retry)
+            size=(250+190*max(2,len(text))+200*retry,920+200*retry)
             image = Image.new(mode='L', size=size)
 
             draw = ImageDraw.Draw(image)
@@ -99,23 +135,23 @@ class SyntheticWord:
             if (minX<maxX and minY<maxY):
                 #print('original {}'.format(np_image.shape))
                 #return np_image,new_text,minX,maxX,minY,maxY,font, f_index,ink
-                return np_image[minY:maxY+1,minX:maxX+1]
+                return np_image[minY:maxY+1,minX:maxX+1],text
             else:
                 #print('uhoh, blank image, what do I do?')
-                return None
-        return None
+                return None,None
+        return None,None
 
 
 if __name__ == "__main__":
     font_dir = sys.argv[1]
     text = sys.argv[2]
     sw = SyntheticWord(font_dir)
-    font,name,fontN,nameN = sw.getFont()
-    for text in [text,text+'y',text+'t']:
+    font,name,fontN,nameN = sw.getFont('text_fonts/Kabrio by Zetafonts/Kabrio-Alternate-Regular-trial.ttf')
+    for text in [text]:#,text+'y',text+'t']:
         if re.match('\d',text):
-            im = sw.getRenderedText(fontN,text)
+            im,text = sw.getRenderedText(fontN,text)
         else:
-            im = sw.getRenderedText(font,text)
-
+            im,text = sw.getRenderedText(font,text)
+        print(text)
         cv2.imshow('x',im)
         cv2.show()
