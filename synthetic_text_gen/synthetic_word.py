@@ -47,11 +47,11 @@ class SyntheticWord:
                 print('rendering {}/{}'.format(index+start,len(these_fonts)+start),end='\r')
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
                 minY,maxY = self.getRenderedText(font,'Tlygj|') 
-                font = (font,minY,maxY)
+                font = (font,minY,maxY,True)
                 bad=False
                 images=[]
                 for s in texts:
-                    image = self.getRenderedText(font,s)
+                    image,text = self.getRenderedText(font,s)
                     if image is None:
                         bad=True
                         break

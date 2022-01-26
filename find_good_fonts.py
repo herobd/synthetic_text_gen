@@ -1,6 +1,6 @@
 import pytesseract
 from synthetic_text_gen import SyntheticWord
-from utils import img_f
+from synthetic_text_gen import img_f
 import editdistance
 import numpy as np
 import sys

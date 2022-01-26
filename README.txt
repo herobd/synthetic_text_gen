@@ -20,14 +20,16 @@ pip install wget
 mkdir all_unzipped
 python scrape.py free-for-commercial-use 506 #scrape and download
 rm *.zip
-mkdir fonts
+mkdir PATH/TO/FINAL_DIR/fonts
 #get only font files
-find all_unzipped -name \*.ttf -exec mv -t fonts {} +
-find all_unzipped -name \*.TTF -exec mv -t fonts {} +
-find all_unzipped -name \*.otf -exec mv -t fonts {} +
-find all_unzipped -name \*.woff -exec mv -t fonts {} +
+find all_unzipped -name \*.ttf -exec mv -t PATH/TO/FINAL_DIR/fonts {} +
+find all_unzipped -name \*.TTF -exec mv -t PATH/TO/FINAL_DIR/fonts {} +
+find all_unzipped -name \*.otf -exec mv -t PATH/TO/FINAL_DIR/fonts {} +
+find all_unzipped -name \*.woff -exec mv -t PATH/TO/FINAL_DIR/fonts {} +
 rm -r all_unzipped
-ls fonts/* > fonts.list
+ls fonts/* > PATH/TO/FINAL_DIR/fonts.list
 
-python clean.py fonts #find out which can render numbers and have lower case
+python clean.py PATH/TO/FINAL_DIR/ #find out which can render numbers and have lower case
+python find_good_fonts.py PATH/TO/FINAL_DIR/
+python cnvert_scored_fonts_to_csv.py PATH/TO/FINAL_DIR/ scored_fonts*.csv
 ```
