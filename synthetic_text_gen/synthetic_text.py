@@ -1,7 +1,6 @@
 from PIL import ImageFont, ImageDraw, Image
 from . import grid_distortion
 from . import img_f as cv2
-#import img_f as cv2
 import numpy as np
 from scipy.ndimage import rotate
 from scipy.ndimage.filters import gaussian_filter
@@ -638,5 +637,5 @@ class SyntheticText:
 if __name__ == "__main__":
     font_dir = sys.argv[1]
     st = SyntheticText(font_dir,None)
-    st.cleanFonts(os.path.join(font_dir,'new_clean_fonts.csv'))
-    print('created clean fonts file: new_clean_fonts.csv')
+    st.cleanFonts(os.path.join(font_dir,'clean_fonts.csv'))
+    print('created clean fonts file: clean_fonts.csv')
