@@ -30,6 +30,8 @@ rm -r all_unzipped
 ls fonts/* > PATH/TO/FINAL_DIR/fonts.list
 
 python clean.py PATH/TO/FINAL_DIR/ #find out which can render numbers and have lower case
+
+#This next part is only if doing distillation (and it requires pytesseract)
 python find_good_fonts.py PATH/TO/FINAL_DIR/
 python cnvert_scored_fonts_to_csv.py PATH/TO/FINAL_DIR/ scored_fonts*.csv
 ```

@@ -1,4 +1,6 @@
 import sys
+import os
+
 font_dir = sys.argv[1]
 
 
