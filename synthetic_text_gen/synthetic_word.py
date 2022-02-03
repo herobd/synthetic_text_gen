@@ -31,7 +31,12 @@ class SyntheticWord:
                 csv_file = 'clean_fonts.csv'
             with open(os.path.join(font_dir,csv_file)) as f:
                 reader = csv.reader(f, delimiter=',', quotechar='"')
-                self.fonts = [(path,case!='False',num!='False') for path,case,num in reader]
+                if clear:
+                    self.fonts = [(path,True,True,True) for path,case,num in reader]
+                    self.bracket_fonts = self.fonts
+                else:
+                    self.fonts = [(path,case!='False',num!='False',bracket!='False') for path,case,num,bracket in reader]
+                    self.bracket_fonts = [font for font in self.fonts if font[3]]
             self.fonts=self.fonts[1:] #discard header row
 
         else:
@@ -42,7 +47,7 @@ class SyntheticWord:
         ret=[]
         texts = ['abcdefg','hijklmn','opqrst','uvwxyz','12345','67890','ABCDEFG','HIJKLMN','OPQRST','UVWXYZ']
         these_fonts = self.fonts[start:start+1000]
-        for index, (filename,hasLower,hasNums) in enumerate(these_fonts):
+        for index, (filename,hasLower,hasNums,hasBracket) in enumerate(these_fonts):
             if hasNums and hasLower:
                 print('rendering {}/{}'.format(index+start,len(these_fonts)+start),end='\r')
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
@@ -65,16 +70,16 @@ class SyntheticWord:
         while True:
             if target is None:
                 index = np.random.choice(len(self.fonts))
-                filename, hasLower, hasNums = self.fonts[index]
+                filename, hasLower, hasNums, hasBrackets = self.fonts[index]
             else:
-                for filename,hasLower,hasNums in self.fonts:
+                for filename,hasLower,hasNums,hasBrackets in self.fonts:
                     if filename==target:
                         break
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
 
-                minY,maxY = self.getRenderedText(font,'Tlygj|')
-                fontR = (font,minY,maxY,hasLower)
+                minY,maxY = self.getRenderedText(font,'Tlygj|)]')
+                fontR = (font,minY,maxY,hasLower,hasBrackets)
                 break
             except OSError:
                 pass
@@ -84,22 +89,45 @@ class SyntheticWord:
         else:
             while True:
                 indexNums = np.random.choice(len(self.fonts))
-                filenameNums, hasLower, hasNums = self.fonts[indexNums]
+                filenameNums, hasLower, hasNums, hasBrackets = self.fonts[indexNums]
                 if hasNums:
                     try:
                         fontNums = ImageFont.truetype(os.path.join(self.font_dir,filenameNums), 100) 
-                        minY,maxY = self.getRenderedText(fontNums,'Tlygj|1')
-                        fontNumsR = (fontNums,minY,maxY,hasLower)
+                        minY,maxY = self.getRenderedText(fontNums,'Tlygj|1)]')
+                        fontNumsR = (fontNums,minY,maxY,hasLower,hasBrackets)
                         break
                     except OSError:
                         pass
         return (fontR,filename,fontNumsR,filenameNums)
+    def getBracketFont(self):
+        while True:
+            index = np.random.choice(len(self.bracket_fonts))
+            filename, hasLower, hasNums, hasBrackets = self.fonts[index]
+            try:
+                font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100) 
+
+                minY,maxY = self.getRenderedText(font,'Tlygj|)]')
+                fontR = (font,minY,maxY,hasLower,hasBrackets)
+                break
+            except OSError:
+                pass
+        return fontR
 
     def getRenderedText(self,fontP,text,ink=0.99):
         if isinstance(fontP, tuple):
-            font,minY,maxY,hasLower = fontP
+            font,minY,maxY,hasLower,hasBrackets = fontP
             if not hasLower:
                 text=text.upper()
+            if not hasBrackets :
+                if '(' in text:
+                    text= text.replace('(','')
+                if ')' in text:
+                    text= text.replace(')','')
+                if '[' in text:
+                    text= text.replace('[','')
+                if ']' in text:
+                    text= text.replace(']','')
+
         else:
             font = fontP
             minY=None
@@ -140,6 +168,20 @@ class SyntheticWord:
                 #print('uhoh, blank image, what do I do?')
                 return None,None
         return None,None
+    
+    def getBrackets(self,fontP=None,paren=True):
+        if fontP is not None:
+            font,minY,maxY,hasLower,hasBrackets = fontP
+        else:
+            hasBrackets = False
+        if not hasBrackets:
+            fontP = self.getBracketFont()
+        open_img,_ = self.getRenderedText(fontP,'(' if paren else '[') 
+        close_img,_ = self.getRenderedText(fontP,')' if paren else ']') 
+        if open_img is None or close_img is None:
+            return self.getBrackets(paren=paren)
+        return open_img,close_img
+
 
 
 if __name__ == "__main__":
