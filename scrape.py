@@ -6,9 +6,7 @@ import zipfile
 import os
 
 '''This script is for scraping fonts of a specific stype from 1001fonts.com
-    I don't know if there's a way to only get free-for-commercial-use only,
-    currently, it gets everything.
-    Usage: type-keyword num-pages count-per-page(10) 
+    Usage: type-keyword num-pages start-page(optional)
 '''
 
 url ='http://www.1001fonts.com/{}-fonts.html?page={}&items={}' #tag,page,num on page
