@@ -1,7 +1,6 @@
 from PIL import ImageFont, ImageDraw, Image
 from . import grid_distortion
 from . import img_f as cv2
-#import img_f as cv2
 import numpy as np
 from scipy.ndimage import rotate
 from scipy.ndimage.filters import gaussian_filter
@@ -200,7 +199,7 @@ class SyntheticText:
                 index = np.random.choice(len(self.fonts),p=self.fontProbs)
             filename = self.fonts[index] #random.choice(self.fonts)
             if type(filename) is not str:
-                filename, hasLower, hasNums = filename
+                filename, hasLower, hasNums,hasBrackets = filename
                 if hasLower=='False':
                     text=text.upper()
                 if hasNums=='False':
@@ -612,31 +611,38 @@ class SyntheticText:
         image_6=self.renderPlain('6',font)
         image_39=self.renderPlain('39',font)
         image_47=self.renderPlain('47',font)
+        image_horse =self.renderPlain('\u265e',font)
+        image_op =self.renderPlain('(',font)
+        image_cp =self.renderPlain(')',font)
+        image_ob =self.renderPlain('[',font)
+        image_cb =self.renderPlain(']',font)
         hasNums = np.absolute(image_1-image_2).sum()>10 and np.absolute(image_1-image_6).sum()>10 and np.absolute(image_47-image_39).sum()>10 and np.absolute(image_5-image_6).sum()>10 and np.absolute(image_5-image_2).sum()>10
         hasLower = np.absolute(image_A-image_a).sum()>10 and np.absolute(image_B-image_b).sum()>10 and np.absolute(image_C-image_c).sum()>10 and np.absolute(image_c-image_a).sum()>10
 
-        return hasChars, hasLower, hasNums
+        hasBrackets = np.absolute(image_horse-image_op).sum()>10 and np.absolute(image_horse-image_cp).sum()>10 and np.absolute(image_horse-image_ob).sum()>10 and np.absolute(image_horse-image_cb).sum()>10 and np.absolute(image_cp-image_op).sum()>10 and np.absolute(image_cb-image_ob).sum()>10
+
+        return hasChars, hasLower, hasNums, hasBrackets
     
     def cleanFonts(self,outfile):
         newFonts=[]
         for i,filename in enumerate(self.fonts):
             try:
                 font = ImageFont.truetype(os.path.join(self.font_dir,filename), 100)
-                hasChars, hasLower, hasNums = self.analyzeFont(font)
+                hasChars, hasLower, hasNums, hasBrackets = self.analyzeFont(font)
             except OSError:
-                hasChars, hasLower, hasNums = (False, False, False)
+                hasChars, hasLower, hasNums = (False, False, False,False)
 
             if hasChars:
-                newFonts.append([filename,hasLower,hasNums])
+                newFonts.append([filename,hasLower,hasNums,hasBrackets])
             print('{}/{}'.format(i,len(self.fonts)),end='\r')
         with open(outfile,'w') as f:
             csvwriter = csv.writer(f, delimiter=',',quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csvwriter.writerow(['path','hasLower','hasNums'])
+            csvwriter.writerow(['path','hasLower','hasNums','hasBrackets'])
             for l in newFonts:
                 csvwriter.writerow(l)
 
 if __name__ == "__main__":
     font_dir = sys.argv[1]
     st = SyntheticText(font_dir,None)
-    st.cleanFonts(os.path.join(font_dir,'new_clean_fonts.csv'))
-    print('created clean fonts file: new_clean_fonts.csv')
+    st.cleanFonts(os.path.join(font_dir,'clean_fonts.csv'))
+    print('created clean fonts file: clean_fonts.csv')

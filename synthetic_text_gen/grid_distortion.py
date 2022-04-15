@@ -1,4 +1,4 @@
-import utils.img_f as cv2
+from . import img_f as cv2
 import numpy as np
 from scipy.interpolate import griddata
 import sys
