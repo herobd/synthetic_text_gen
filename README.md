@@ -16,7 +16,7 @@ Here's the example in `mytest.py`
 from synthetic_text_gen import SyntheticWord
 import cv2
 
-st = SyntheticWord('../fontScraper/')
+st = SyntheticWord('../fontsScraped/')
 font,font_name,fontN,fontN_name = st.getFont()
 img,word_new = st.getRenderedText(font,"Test")
 cv2.imshow('t',img)
@@ -28,11 +28,11 @@ SyntheticWord is intended to only work with words (not long strings).
 
 # Scrape 1001fonts.com
 
-(The scripts expect Python2, sorry.)
+(These scripts expect Python2, sorry.)
 
 `scrape.py` is a tool which scrapes fonts from 1001fonts, particularly we're grabing the free for commercial use fonts.
 
-Usage:python scrape.py [TYPE (serif,handwritten,free-for-commercial-use,etc)] [NUMPAGES (number of result pages, check website)]
+Usage: `python scrape.py [TYPE (serif,handwritten,free-for-commercial-use,etc)] [NUMPAGES (number of result pages, check website)]`
 
 `clean.py` is a script which goes through each font and renders a few characters to test what character sets a font has (numbers, upper/lower case, a few punctuation marks) and saves the results (this resulting file is what is used by SyntheticWord.
 
@@ -42,7 +42,7 @@ Steps to set up fonts as expected by synthetic_text_gen:
 pip install wget
 
 
-mkdir all_unzipped
+mkdir all_unzipped #hard-coded directory name for scrape.py
 python scrape.py free-for-commercial-use 506 #scrape and download
 rm *.zip
 mkdir PATH/TO/FINAL_DIR/fonts
