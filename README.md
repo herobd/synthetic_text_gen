@@ -36,7 +36,7 @@ Usage: `python scrape.py [TYPE (serif,handwritten,free-for-commercial-use,etc)] 
 
 `clean.py` is a script which goes through each font and renders a few characters to test what character sets a font has (numbers, upper/lower case, a few punctuation marks) and saves the results (this resulting file is what is used by SyntheticWord.
 
-Steps to set up fonts as expected by synthetic_text_gen:
+Steps to set up fonts as used in Dessurt (https://arxiv.org/abs/2203.16618 / https://github.com/herobd/dessurt):
 ```
 #Dependency
 pip install wget
